@@ -44,7 +44,7 @@ initialState handle = State
 
 
 draw :: State -> [Widget Resource]
-draw s = [(withBorderStyle unicodeRounded) $ (drawMap s) <+> (drawStatus s)]
+draw s = [withBorderStyle unicodeRounded $ (drawMap s) <+> (drawStatus s)]
 
 drawMap :: State -> Widget Resource
 drawMap s = padRight Max $ str (unlines (stateTerrain s))

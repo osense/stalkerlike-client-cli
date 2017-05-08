@@ -29,6 +29,7 @@ executable stalkerlike-client-cli-exe
                      , Data.TCPEvent
                      , TCP.Client
                      , UI.App
+                     , UI.Login
 
 test-suite stalkerlike-client-cli-test
   type:                exitcode-stdio-1.0

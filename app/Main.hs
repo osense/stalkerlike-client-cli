@@ -5,13 +5,15 @@ import Brick
 import Brick.BChan
 import Graphics.Vty
 
-import UI.App
-import TCP.Client
+import UI.Login (runLogin)
+import UI.App (State, app, initialState)
+import TCP.Client (startTCP)
 import Data.TCPEvent
 
 
 main :: IO ()
 main = do
+  (user, pass) <- runLogin
   tcpChan <- newBChan 50
   (tcpHandle, tcpThread) <- startTCP tcpChan
   runUI tcpChan tcpHandle
