@@ -1,19 +1,20 @@
 module UI.App where
-import GHC.IO.Handle
+import Network.Connection (Connection)
 import Brick
+import Brick.BChan
 import Brick.Widgets.Border
 import Brick.Widgets.Border.Style
 import Graphics.Vty
 import Data.Maybe (isJust, fromJust)
 import Data.List (find)
 
-import Data.TCPEvent
+import qualified Data.TCP as TCP
 import Data.Entity
 import Data.Default
 
 
 data State = State
-  { stateTCPHandle :: Handle
+  { stateCon :: Connection
   , stateTerrain :: [String]
   , stateEntities :: [Entity]
   , stateLog :: [String]
@@ -24,7 +25,12 @@ data Resource = Resource ()
   deriving (Eq, Ord)
 
 
-app :: App State TCPEvent Resource
+runApp :: Connection -> BChan TCP.Event -> IO State
+runApp con chan = customMain
+  (Graphics.Vty.mkVty Graphics.Vty.defaultConfig)
+  (Just chan) app (initialState con)
+
+app :: App State TCP.Event Resource
 app = App
   { appDraw = draw
   , appChooseCursor = const $ const Nothing
@@ -33,9 +39,9 @@ app = App
   , appAttrMap = const $ attrMap Graphics.Vty.defAttr []
   }
 
-initialState :: Handle -> State
-initialState handle = State
-  { stateTCPHandle = handle
+initialState :: Connection -> State
+initialState con = State
+  { stateCon = con
   , stateTerrain = ["Loading..."]
   , stateEntities = []
   , stateLog = ["If the log is empty, UI breaks."]
@@ -70,7 +76,7 @@ findEntity :: EntityId -> State -> Maybe Entity
 findEntity e s = find (\e' -> entityId e' == e) (stateEntities s)
 
 
-handleEvent :: State -> BrickEvent Resource TCPEvent -> EventM Resource (Next State)
+handleEvent :: State -> BrickEvent Resource TCP.Event -> EventM Resource (Next State)
 handleEvent s (VtyEvent e) = handleVtyEvent s e
 handleEvent s (AppEvent e) = handleAppEvent s e
 
@@ -80,20 +86,20 @@ handleVtyEvent s (EvKey k mod) = continue s
 handleVtyEvent s (EvResize k y) = continue s
 handleVtyEvent s _ = continue s
 
-handleAppEvent :: State -> TCPEvent -> EventM Resource (Next State)
-handleAppEvent s (TCPEventFail msg) =
-  continue (s {stateLog = ("Failed to parse TCP message: " ++ msg):(stateLog s)})
-handleAppEvent s (TCPEventLog msg) =
+handleAppEvent :: State -> TCP.Event -> EventM Resource (Next State)
+handleAppEvent s (TCP.EventFail msg) =
+  continue (s {stateLog = ("Failed to parse TCP. message: " ++ msg):(stateLog s)})
+handleAppEvent s (TCP.EventLog msg) =
   continue (s {stateLog = msg:(stateLog s)})
-handleAppEvent s (TCPEventTerrain t) =
+handleAppEvent s (TCP.EventTerrain t) =
   continue (s {stateTerrain = t})
-handleAppEvent s (TCPEventEntityAdd e) =
+handleAppEvent s (TCP.EventEntityAdd e) =
   continue (s {stateEntities = e:(stateEntities s)})
-handleAppEvent s (TCPEventEntityRemove eid) =
+handleAppEvent s (TCP.EventEntityRemove eid) =
   continue (s {stateEntities = filter (\e -> entityId e /= eid) (stateEntities s)})
-handleAppEvent s (TCPEventPlayerId eid) =
+handleAppEvent s (TCP.EventPlayerId eid) =
   if isJust player then
     continue (s {statePlayer = fromJust player})
   else
-    handleAppEvent s (TCPEventFail $ "Failed to find player entity with Id " ++ show eid)
+    handleAppEvent s (TCP.EventFail $ "Failed to find player entity with Id " ++ show eid)
   where player = findEntity eid s
