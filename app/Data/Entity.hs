@@ -25,14 +25,14 @@ data EntityState = EntityState
   { entityPos :: Pos
   , entityRot :: Rot
   , entityBearing :: Bearing
-  , entityHp :: Int
+  , entityHP :: Int
   , entityWielding :: Maybe EntityId
   } deriving (Generic, Show)
 
 data EntityConf = EntityConf
   { entityName :: EntityName
   , entityIcon :: Char
-  , entityMaxHp :: Int
+  , entityMaxHP :: Int
   , entityActions :: [Action]
   , entityMore :: [More]
   } deriving (Generic, Show)
