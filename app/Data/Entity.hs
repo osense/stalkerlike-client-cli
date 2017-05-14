@@ -87,7 +87,7 @@ instance Default EntityState where
     { entityPos = Pos {posX = 0, posY = 0}
     , entityRot = 0
     , entityBearing = Standing
-    , entityHp = 100
+    , entityHP = 100
     , entityWielding = Nothing
     }
 
@@ -95,7 +95,7 @@ instance Default EntityConf where
   def = EntityConf
     { entityName = "Unknown"
     , entityIcon = 'X'
-    , entityMaxHp = 100
+    , entityMaxHP = 100
     , entityActions = []
     , entityMore = []
     }

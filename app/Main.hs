@@ -7,14 +7,12 @@ import Graphics.Vty
 
 import UI.Login (runLogin)
 import UI.App (runApp)
-import TCP.Client (connect, startTCP)
+import TCP.Client (connect)
 
 
 main :: IO ()
 main = do
-  tcpChan <- newBChan 10
-  tcpCon <- connect "localhost" 31415
-  tcpThread <- startTCP tcpCon tcpChan
-  runLogin tcpCon tcpChan
-  runApp tcpCon tcpChan
-  killThread tcpThread
+  (downChan, upChan) <- connect "localhost" 31415
+  runLogin downChan upChan
+  --runApp downChan upChan
+  return ()

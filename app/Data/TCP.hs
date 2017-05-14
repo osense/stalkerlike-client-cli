@@ -28,7 +28,7 @@ data Event =
     deriving (Generic, Show)
 
 
-data Dir = Up | Down | Left | Right | UpLeft | UpRight | DownLeft | DownRight
+data Dir = DirUp | DirDown | DirLeft | DirRight | DirUpLeft | DirUpRight | DirDownLeft | DirDownRight
   deriving (Eq, Generic, Show)
 
 data Command =

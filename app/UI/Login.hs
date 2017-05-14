@@ -1,5 +1,5 @@
 module UI.Login where
-import Network.Connection
+import Control.Concurrent.STM.TMChan (TMChan)
 import Data.Aeson
 import System.Exit (exitSuccess)
 import Brick
@@ -10,7 +10,6 @@ import Brick.Widgets.Border
 import Brick.Widgets.Border.Style
 import Graphics.Vty
 import Control.Monad.IO.Class
-import TCP.Util
 import qualified Data.TCP as TCP
 
 
@@ -18,7 +17,7 @@ data Res = ResName | ResPass
   deriving (Eq, Ord, Show)
 
 data State = State
-  { stateCon :: Connection
+  { stateChan :: TMChan TCP.Command
   , stateEditName :: Editor String Res
   , stateEditPass :: Editor String Res
   , stateFocused :: Res
@@ -26,10 +25,10 @@ data State = State
   }
 
 
-runLogin :: Connection -> BChan TCP.Event -> IO State
-runLogin con chan = customMain
+runLogin :: BChan TCP.Event -> TMChan TCP.Command -> IO State
+runLogin downChan upChan = customMain
   (Graphics.Vty.mkVty Graphics.Vty.defaultConfig)
-  (Just chan) app (initialState con)
+  (Just downChan) app (initialState upChan)
 
 app :: App State TCP.Event Res
 app = App
@@ -40,9 +39,9 @@ app = App
   , appAttrMap = const $ attrMap Graphics.Vty.defAttr []
   }
 
-initialState :: Connection -> State
-initialState con = State
-  { stateCon = con
+initialState :: TMChan TCP.Command -> State
+initialState upChan = State
+  { stateChan = upChan
   , stateEditName = editor ResName (str . head) (Just 1) ""
   , stateEditPass = editor ResPass (str . head) (Just 1) ""
   , stateFocused = ResName
@@ -73,7 +72,7 @@ handleVtyEvent s (EvKey KEnter mod) =
   in
     if name /= "" && pass /= ""
       then do
-        res <- liftIO $ attemptLogin (stateCon s) name pass
+        res <- liftIO $ attemptLogin (stateChan s) name pass
         either (\err -> continue s)
                (const (halt s))
                res
@@ -91,7 +90,7 @@ handleAppEvent s TCP.EventLoginSuccess = halt s
 handleAppEvent s (TCP.EventLoginFail info) = continue (s {stateMotd = info})
 handleAppEvent s _ = continue s
 
-attemptLogin :: Connection -> String -> String -> IO (Either String ())
+attemptLogin :: TMChan TCP.Command -> String -> String -> IO (Either String ())
 attemptLogin = undefined
 --attemptLogin con user pass = do
 --  putJSON (TCP.CommandLogin user pass)
