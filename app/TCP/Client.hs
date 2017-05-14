@@ -1,6 +1,5 @@
 module TCP.Client where
 import Control.Concurrent
-import Data.Default
 import Control.Concurrent.Async (concurrently)
 import Control.Monad (void)
 import Data.Conduit
@@ -22,10 +21,10 @@ connect host port = do
   upChan <- newTMChanIO
   forkIO $ runTCPClient (clientSettings port (BS.pack host)) $ \server ->
     void $ concurrently
-      (runConduit $ sourceTMChan upChan .| C.map encode' .| appSink server)
+      (runConduit $ sourceTMChan upChan .| C.map encodeStrict .| appSink server)
       (runConduit $ appSource server .| C.map (handleError . decodeStrict) .| C.mapM_ (writeBChan downChan))
   return (downChan, upChan)
-  where encode' = toStrict . encode
+  where encodeStrict = toStrict . encode
         toStrict = BS.pack . LBS.unpack
         handleError Nothing = undefined
         handleError (Just x) = x
