@@ -14,5 +14,5 @@ main :: IO ()
 main = do
   (downChan, upChan) <- connect "localhost" 31415
   runLogin downChan upChan
-  --runApp downChan upChan
+  runApp downChan upChan
   return ()

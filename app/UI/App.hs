@@ -1,5 +1,5 @@
 module UI.App where
-import Network.Connection (Connection)
+import Control.Concurrent.STM.TMChan (TMChan)
 import Brick
 import Brick.BChan
 import Brick.Widgets.Border
@@ -14,7 +14,7 @@ import Data.Default
 
 
 data State = State
-  { stateCon :: Connection
+  { stateChan :: TMChan TCP.Command
   , stateTerrain :: [String]
   , stateEntities :: [Entity]
   , stateLog :: [String]
@@ -25,10 +25,10 @@ data Resource = Resource ()
   deriving (Eq, Ord)
 
 
-runApp :: Connection -> BChan TCP.Event -> IO State
-runApp con chan = customMain
+runApp :: BChan TCP.Event -> TMChan TCP.Command -> IO State
+runApp downChan upChan = customMain
   (Graphics.Vty.mkVty Graphics.Vty.defaultConfig)
-  (Just chan) app (initialState con)
+  (Just downChan) app (initialState upChan)
 
 app :: App State TCP.Event Resource
 app = App
@@ -39,9 +39,9 @@ app = App
   , appAttrMap = const $ attrMap Graphics.Vty.defAttr []
   }
 
-initialState :: Connection -> State
-initialState con = State
-  { stateCon = con
+initialState :: TMChan TCP.Command -> State
+initialState chan = State
+  { stateChan = chan
   , stateTerrain = ["Loading..."]
   , stateEntities = []
   , stateLog = ["If the log is empty, UI breaks."]
@@ -60,7 +60,7 @@ drawStatus s = (drawPlayerInfo s) <=> (drawLog (stateLog s))
 
 drawPlayerInfo :: State -> Widget Resource
 drawPlayerInfo s = borderWithLabel (str (entityName playerConf)) $ hLimit 40 $ padRight Max $
-  str $ "HP : " ++ show (entityHp playerState) ++ " / " ++ show (entityMaxHp playerConf) ++ "\n" ++
+  str $ "HP : " ++ show (entityHP playerState) ++ " / " ++ show (entityMaxHP playerConf) ++ "\n" ++
     "Wielding " ++ (maybe "nothing" id weaponName)
   where playerState = entityState (statePlayer s)
         playerConf = entityConf (statePlayer s)

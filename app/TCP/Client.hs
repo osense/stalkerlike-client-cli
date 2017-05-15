@@ -6,7 +6,6 @@ import Data.Conduit
 import qualified Data.Conduit.Combinators as C
 import Data.Conduit.Network
 import Data.Conduit.TMChan (sourceTMChan)
-import Data.Conduit.Attoparsec (sinkParserEither, conduitParserEither)
 import Data.Aeson (FromJSON, ToJSON, encode, decodeStrict)
 import Data.Aeson.Parser (json)
 import Control.Concurrent.STM.TMChan (TMChan, newTMChanIO)
