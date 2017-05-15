@@ -18,7 +18,6 @@ type Terrain = [String]
 data Event =
     EventLoginMOTD String
   | EventLoginSuccess
-  | EventLoginFail String
   | EventFail String
   | EventLog String
   | EventTerrain Terrain

@@ -1,5 +1,6 @@
 module UI.Login where
-import Control.Concurrent.STM.TMChan (TMChan)
+import Control.Concurrent.STM.TMChan (TMChan, writeTMChan)
+import GHC.Conc.Sync (atomically)
 import Data.Aeson
 import System.Exit (exitSuccess)
 import Brick
@@ -9,7 +10,7 @@ import Brick.Widgets.Edit
 import Brick.Widgets.Border
 import Brick.Widgets.Border.Style
 import Graphics.Vty
-import Control.Monad.IO.Class
+import Control.Monad.IO.Class (liftIO)
 import qualified Data.TCP as TCP
 
 
@@ -72,10 +73,8 @@ handleVtyEvent s (EvKey KEnter mod) =
   in
     if name /= "" && pass /= ""
       then do
-        res <- liftIO $ attemptLogin (stateChan s) name pass
-        either (\err -> continue s)
-               (const (halt s))
-               res
+        liftIO . atomically $ writeTMChan (stateChan s) (TCP.CommandLogin name pass)
+        continue s
       else continue s
 handleVtyEvent s e = do
   let foc = if (stateFocused s) == ResName then (stateEditName s) else (stateEditPass s)
@@ -87,17 +86,5 @@ handleVtyEvent s e = do
 handleAppEvent :: State -> TCP.Event -> EventM Res (Next State)
 handleAppEvent s (TCP.EventLoginMOTD motd) = continue (s {stateMotd = motd})
 handleAppEvent s TCP.EventLoginSuccess = halt s
-handleAppEvent s (TCP.EventLoginFail info) = continue (s {stateMotd = info})
+handleAppEvent s (TCP.EventFail info) = continue (s {stateMotd = (stateMotd s) ++ "\n" ++ info})
 handleAppEvent s _ = continue s
-
-attemptLogin :: TMChan TCP.Command -> String -> String -> IO (Either String ())
-attemptLogin = undefined
---attemptLogin con user pass = do
---  putJSON (TCP.CommandLogin user pass)
---  _ <- connectionPut con (BS.pack "\n")
---  _ <- connectionWaitForInput con (-1)
---  reply <- connectionGetLine 1000 con
---  let res = maybe TCP.LoginEvenFail id $ decodeStrict reply
---  if res == TCP.LoginEventSuccess
---    then return (Right ())
---    else return (Left (BS.unpack reply))
