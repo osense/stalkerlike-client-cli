@@ -86,5 +86,5 @@ handleVtyEvent s e = do
 handleAppEvent :: State -> TCP.Event -> EventM Res (Next State)
 handleAppEvent s (TCP.EventLoginMOTD motd) = continue (s {stateMotd = motd})
 handleAppEvent s TCP.EventLoginSuccess = halt s
-handleAppEvent s (TCP.EventFail info) = continue (s {stateMotd = (stateMotd s) ++ "\n" ++ info})
+handleAppEvent s (TCP.EventFail info) = continue (s {stateMotd = (stateMotd s) ++ "\nError: " ++ info})
 handleAppEvent s _ = continue s
