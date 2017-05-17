@@ -12,6 +12,7 @@ import Brick.Widgets.Border.Style
 import Graphics.Vty
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.TCP as TCP
+import UI.Common
 
 
 data Res = ResName | ResPass
@@ -46,7 +47,7 @@ initialState upChan = State
   , stateEditName = editor ResName (str . head) (Just 1) ""
   , stateEditPass = editor ResPass (str . head) (Just 1) ""
   , stateFocused = ResName
-  , stateMotd = " "
+  , stateMotd = "Connecting..."
   }
 
 draw :: State -> [Widget Res]
@@ -73,7 +74,7 @@ handleVtyEvent s (EvKey KEnter mod) =
   in
     if name /= "" && pass /= ""
       then do
-        liftIO . atomically $ writeTMChan (stateChan s) (TCP.CommandLogin name pass)
+        send (stateChan s) (TCP.CommandLogin name pass)
         continue s
       else continue s
 handleVtyEvent s e = do

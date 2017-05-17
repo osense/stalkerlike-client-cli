@@ -35,6 +35,7 @@ executable stalkerlike-client-cli-exe
   other-modules:       Data.Entity
                      , Data.TCP
                      , TCP.Client
+                     , UI.Common
                      , UI.App
                      , UI.Login
 
