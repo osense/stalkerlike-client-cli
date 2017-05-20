@@ -22,9 +22,11 @@ data Event =
   | EventLog String
   | EventTerrain Terrain
   | EventEntityAdd Entity
-  | EventEntityRemove EntityId
-  | EventPlayerId EntityId
+  | EventEntityRemove Id
+  | EventPlayerId Id
     deriving (Generic, Show)
+
+instance FromJSON Event
 
 
 data Dir = DirUp | DirDown | DirLeft | DirRight | DirUpLeft | DirUpRight | DirDownLeft | DirDownRight
@@ -36,10 +38,5 @@ data Command =
   | CommandMove Dir
     deriving (Eq, Generic, Show)
 
-
-instance FromJSON Event
-instance ToJSON Event
-instance FromJSON Dir
 instance ToJSON Dir
-instance FromJSON Command
 instance ToJSON Command

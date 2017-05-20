@@ -9,7 +9,8 @@ import Data.Maybe (isJust, fromJust)
 import Data.List (find)
 
 import qualified Data.TCP as TCP
-import Data.Entity
+import Data.Entity (Entity)
+import qualified Data.Entity as E
 import Data.Default
 
 
@@ -59,21 +60,17 @@ drawStatus :: State -> Widget Resource
 drawStatus s = (drawPlayerInfo s) <=> (drawLog (stateLog s))
 
 drawPlayerInfo :: State -> Widget Resource
-drawPlayerInfo s = borderWithLabel (str (entityName playerConf)) $ hLimit 40 $ padRight Max $
-  str $ "HP : " ++ show (entityHP playerState) ++ " / " ++ show (entityMaxHP playerConf) ++ "\n" ++
-    "Wielding " ++ (maybe "nothing" id weaponName)
-  where playerState = entityState (statePlayer s)
-        playerConf = entityConf (statePlayer s)
-        wielding = (entityWielding (entityState (statePlayer s)))
-        weaponName = (entityName . entityConf) <$> (wielding >>= (\eid -> findEntity eid s))
+drawPlayerInfo s = borderWithLabel (str (E.stateName playerState)) $ hLimit 40 $ padRight Max $
+  str $ "HP : " ++ show (E.stateHP playerState) ++ " / " ++ show (E.stateMaxHP playerState)
+  where playerState = E.entityState (statePlayer s)
 
 
 drawLog :: [String] -> Widget Resource
 drawLog l = borderWithLabel (str "Log") $ padBottom Max $ hLimit 40 $ padRight Max $
   (str . unlines) l
 
-findEntity :: EntityId -> State -> Maybe Entity
-findEntity e s = find (\e' -> entityId e' == e) (stateEntities s)
+findEntity :: E.Id -> State -> Maybe Entity
+findEntity e s = find (\e' -> E.entityId e' == e) (stateEntities s)
 
 
 handleEvent :: State -> BrickEvent Resource TCP.Event -> EventM Resource (Next State)
@@ -87,19 +84,20 @@ handleVtyEvent s (EvResize k y) = continue s
 handleVtyEvent s _ = continue s
 
 handleAppEvent :: State -> TCP.Event -> EventM Resource (Next State)
-handleAppEvent s (TCP.EventFail msg) =
-  continue (s {stateLog = ("Failed to parse TCP. message: " ++ msg):(stateLog s)})
-handleAppEvent s (TCP.EventLog msg) =
-  continue (s {stateLog = msg:(stateLog s)})
-handleAppEvent s (TCP.EventTerrain t) =
-  continue (s {stateTerrain = t})
-handleAppEvent s (TCP.EventEntityAdd e) =
-  continue (s {stateEntities = e:(stateEntities s)})
-handleAppEvent s (TCP.EventEntityRemove eid) =
-  continue (s {stateEntities = filter (\e -> entityId e /= eid) (stateEntities s)})
-handleAppEvent s (TCP.EventPlayerId eid) =
-  if isJust player then
-    continue (s {statePlayer = fromJust player})
-  else
-    handleAppEvent s (TCP.EventFail $ "Failed to find player entity with Id " ++ show eid)
-  where player = findEntity eid s
+handleAppEvent s e = continue (s {stateLog = (show e):(stateLog s)})
+--handleAppEvent s (TCP.EventFail msg) =
+--  continue (s {stateLog = ("Failed to parse TCP. message: " ++ msg):(stateLog s)})
+--handleAppEvent s (TCP.EventLog msg) =
+--  continue (s {stateLog = msg:(stateLog s)})
+--handleAppEvent s (TCP.EventTerrain t) =
+--  continue (s {stateTerrain = t})
+--handleAppEvent s (TCP.EventEntityAdd e) =
+--  continue (s {stateEntities = e:(stateEntities s)})
+--handleAppEvent s (TCP.EventEntityRemove eid) =
+--  continue (s {stateEntities = filter (\e -> E.entityId e /= eid) (stateEntities s)})
+--handleAppEvent s (TCP.EventPlayerId eid) =
+--  if isJust player then
+--    continue (s {statePlayer = fromJust player})
+--  else
+--    handleAppEvent s (TCP.EventFail $ "Failed to find player entity with Id " ++ show eid)
+--  where player = findEntity eid s

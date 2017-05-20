@@ -5,8 +5,8 @@ import Data.Default
 import GHC.Generics
 import Data.Aeson
 
-type EntityId = Int
-type EntityName = String
+type Id = Int
+type Name = String
 
 data Pos = Pos
   { posX :: Int
@@ -15,45 +15,43 @@ data Pos = Pos
 
 type Rot = Int
 
-data Bearing = Standing | Crouching
-  deriving (Generic, Show)
 
-data Action = Walk | Run | Crouch | PickUpItem | EquipItem | ConsumeItem | Attack | PickUp
-  deriving (Generic, Show)
-
-data EntityState = EntityState
-  { entityPos :: Pos
-  , entityRot :: Rot
-  , entityBearing :: Bearing
-  , entityHP :: Int
-  , entityWielding :: Maybe EntityId
+data State = State
+  { stateName :: Name
+  , stateIcon :: Char
+  , statePos :: Pos
+  , stateRot :: Rot
+  , stateHP :: Int
+  , stateMaxHP :: Int
   } deriving (Generic, Show)
 
-data EntityConf = EntityConf
-  { entityName :: EntityName
-  , entityIcon :: Char
-  , entityMaxHP :: Int
-  , entityActions :: [Action]
-  , entityMore :: [More]
-  } deriving (Generic, Show)
+instance Default State where
+  def = (State "Unknown" '?' (Pos 0 0) 0 100 100)
 
-
-data FireMode = Single | Burst | Full
+data MovesMode = Walk | Run | Crouch
   deriving (Generic, Show)
 
-data Alive = Alive
-  { aliveWalkSpeed :: Int
-  , aliveRunSpeed :: Int
-  , aliveMinAttack :: Int
-  , aliveMaxAttack :: Int
+data Moves = Moves
+  { movesWalkSpeed :: Int
+  , movesRunSpeed :: Int
+  , movesCrouchSpeed :: Int
+  , movesModes :: [MovesMode]
   } deriving (Generic, Show)
+
+data Item = Item
+  { itemValue :: Int
+  , itemWeight :: Double
+  } deriving (Generic, Show)
+
+data FireMode = Auto | Single | Burst
+  deriving (Generic, Show)
 
 data Weapon = Weapon
-  { weaponAmmo :: [EntityName]
-  , weaponMags :: [EntityName]
-  , weaponAccuracy :: Int
+  { weaponAmmo :: [Name]
+  , weaponMags :: [Name]
+  , weaponAccuracy :: Double
   , weaponFireModes :: [FireMode]
-  , weaponUpgrades :: [EntityName]
+  , weaponUpgrades :: [Name]
   , weaponMeleeDamage :: Int
   } deriving (Generic, Show)
 
@@ -62,8 +60,8 @@ data Ammo = Ammo
   } deriving (Generic, Show)
 
 data WeaponUpgrade = WeaponUpgrade
-  { weaponUpgradeAmmo :: [EntityName]
-  , weaponUpgradeAccuracy :: Int
+  { weaponUpgradeAmmo :: [Name]
+  , weaponUpgradeAccuracy :: Double
   , weaponUpgradeFireModes :: [FireMode]
   , weaponUpgradeMeleeDamage :: Int
   } deriving (Generic, Show)
@@ -72,61 +70,48 @@ data Mag = Mag
   { capacity :: Int
   } deriving (Generic, Show)
 
-data More = MoreAlive Alive | MoreWeapon Weapon | MoreAmmo Ammo | MoreWeaponUpgrade WeaponUpgrade | MoreMag Mag
-  deriving (Generic, Show)
+data Component =
+    CompMoves Moves
+  | CompItem Item
+  | CompWeapon Weapon
+  | CompAmmo Ammo
+  | CompWeaponUpgrade WeaponUpgrade
+  | CompMag Mag
+    deriving (Generic, Show)
 
 data Entity = Entity
-  { entityId :: EntityId
-  , entityState :: EntityState
-  , entityConf :: EntityConf
-  } deriving (Generic, Show)
-
-
-instance Default EntityState where
-  def = EntityState
-    { entityPos = Pos {posX = 0, posY = 0}
-    , entityRot = 0
-    , entityBearing = Standing
-    , entityHP = 100
-    , entityWielding = Nothing
-    }
-
-instance Default EntityConf where
-  def = EntityConf
-    { entityName = "Unknown"
-    , entityIcon = 'X'
-    , entityMaxHP = 100
-    , entityActions = []
-    , entityMore = []
-    }
+  { entityId :: Int
+  , entityState :: State
+  , comps :: [Component]
+  }
+  deriving (Generic, Show)
 
 instance Default Entity where
-  def = Entity 0 def def
+  def = (Entity 0 def [])
 
 
 instance FromJSON Pos
-instance ToJSON Pos
-instance FromJSON Bearing
-instance ToJSON Bearing
-instance FromJSON Action
-instance ToJSON Action
-instance FromJSON EntityState
-instance ToJSON EntityState
-instance FromJSON EntityConf
-instance ToJSON EntityConf
+instance FromJSON State
+instance FromJSON MovesMode
+instance FromJSON Moves
+instance FromJSON Item
 instance FromJSON FireMode
-instance ToJSON FireMode
-instance FromJSON Alive
-instance ToJSON Alive
 instance FromJSON Weapon
-instance ToJSON Weapon
 instance FromJSON Ammo
-instance ToJSON Ammo
 instance FromJSON WeaponUpgrade
-instance ToJSON WeaponUpgrade
 instance FromJSON Mag
-instance ToJSON Mag
-instance FromJSON More
-instance ToJSON More
+instance FromJSON Component
 instance FromJSON Entity
+
+instance ToJSON Pos
+instance ToJSON State
+instance ToJSON MovesMode
+instance ToJSON Moves
+instance ToJSON Item
+instance ToJSON FireMode
+instance ToJSON Weapon
+instance ToJSON Ammo
+instance ToJSON WeaponUpgrade
+instance ToJSON Mag
+instance ToJSON Component
 instance ToJSON Entity
