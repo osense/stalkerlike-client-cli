@@ -56,7 +56,6 @@ draw s = [withBorderStyle unicodeRounded $ motd <=> login]
         login = center $ borderWithLabel (str "Login") $ hLimit 40 $ (name <=> pass)
         name = (str "Name: ") <+> renderEditor (stateFocused s == ResName) (stateEditName s)
         pass = (str "Pass: ") <+> renderEditor (stateFocused s == ResPass) (stateEditPass s)
-        padAll = padLeft Max . padRight Max . padTop Max . padBottom Max
 
 handleEvent :: State -> BrickEvent Res TCP.Event -> EventM Res (Next State)
 handleEvent s (VtyEvent e) = handleVtyEvent s e
