@@ -6,7 +6,7 @@ import Data.Conduit
 import qualified Data.Conduit.Combinators as C
 import Data.Conduit.Network
 import Data.Conduit.TMChan (sourceTMChan)
-import Data.Aeson (FromJSON, ToJSON, encode, eitherDecodeStrict)
+import Data.Aeson (FromJSON, ToJSON, encode, decodeStrict)
 import Data.Aeson.Parser (json)
 import Control.Concurrent.STM.TMChan (TMChan, newTMChanIO)
 import Brick.BChan (BChan, newBChan, writeBChan)
@@ -26,8 +26,10 @@ run :: String -> Int -> BChan TCP.Event -> TMChan TCP.Command -> IO ()
 run host port downChan upChan = runTCPClient (clientSettings port (BS.pack host)) $ \server ->
   void $ concurrently
     (runConduit $ sourceTMChan upChan .| C.map (\x -> encodeStrict x `BS.append` (BS.pack "\n")) .| appSink server)
-    (runConduit $ appSource server .| C.map (handleError . eitherDecodeStrict) .| C.mapM_ (writeBChan downChan))
+    (runConduit $ appSource server .| C.map parse .| C.mapM_ (writeBChan downChan))
   where encodeStrict = toStrict . encode
         toStrict = BS.pack . LBS.unpack
-        handleError (Left e) = TCP.EventFail e
-        handleError (Right x) = x
+        parse bs =
+          case decodeStrict bs of
+            Nothing -> TCP.EventFail $ "Failed to parse: " ++ (BS.unpack bs)
+            Just x -> x
